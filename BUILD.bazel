@@ -1,0 +1,12 @@
+# This creates a Python library from math_utils.py
+py_library(
+    name = "math_utils",
+    srcs = ["math_utils.py"],
+)
+
+# This creates a Python executable from hello.py
+py_binary(
+    name = "hello",
+    srcs = ["hello.py"],
+    deps = [":math_utils"],
+)

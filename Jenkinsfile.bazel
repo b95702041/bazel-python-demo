@@ -8,13 +8,28 @@ pipeline {
     stages {
         stage('Setup Build Environment') {
             steps {
-                echo 'Installing build tools and Bazelisk...'
+                echo 'Installing build tools with root permissions...'
                 sh '''
-                    # Install build essentials as root (Jenkins container allows this)
-                    apt-get update
-                    apt-get install -y build-essential curl
+                    # Try to run as root user (Jenkins container often allows this)
+                    whoami
                     
-                    # Install Bazelisk if not already installed
+                    # Update package lists and install build tools
+                    apt-get update || (echo "Trying with different approach..." && sudo apt-get update)
+                    apt-get install -y build-essential curl python3 python3-dev || sudo apt-get install -y build-essential curl python3 python3-dev
+                    
+                    # Verify installations
+                    gcc --version
+                    python3 --version
+                    
+                    echo "Build environment setup completed!"
+                '''
+            }
+        }
+        
+        stage('Install Bazelisk') {
+            steps {
+                echo 'Installing Bazelisk...'
+                sh '''
                     if ! command -v bazel &> /dev/null; then
                         echo "Installing Bazelisk..."
                         curl -L -o bazelisk "https://github.com/bazelbuild/bazelisk/releases/latest/download/bazelisk-linux-amd64"
@@ -22,15 +37,11 @@ pipeline {
                         mkdir -p ~/bin
                         mv bazelisk ~/bin/bazel
                         export PATH="$HOME/bin:$PATH"
-                        echo "Bazelisk installation completed!"
                         ~/bin/bazel version
                     else
                         echo "Bazel is already installed."
                         bazel version
                     fi
-                    
-                    # Verify gcc is available
-                    gcc --version
                 '''
             }
         }
@@ -78,13 +89,6 @@ pipeline {
         failure {
             echo 'Bazel build failed! ❌'
             echo 'Check the logs above for details.'
-        }
-        cleanup {
-            echo 'Cleaning up workspace...'
-            sh '''
-                export PATH="$HOME/bin:$PATH"
-                bazel clean --expunge || true
-            '''
         }
     }
 }

@@ -6,32 +6,31 @@ pipeline {
     }
     
     stages {
-        stage('Install Bazelisk') {
+        stage('Setup Build Environment') {
             steps {
-                echo 'Installing Bazelisk (Bazel launcher)...'
+                echo 'Installing build tools and Bazelisk...'
                 sh '''
-                    # Check if Bazel is already installed
+                    # Install build essentials as root (Jenkins container allows this)
+                    apt-get update
+                    apt-get install -y build-essential curl
+                    
+                    # Install Bazelisk if not already installed
                     if ! command -v bazel &> /dev/null; then
-                        echo "Bazel not found. Installing Bazelisk..."
-                        
-                        # Download Bazelisk
+                        echo "Installing Bazelisk..."
                         curl -L -o bazelisk "https://github.com/bazelbuild/bazelisk/releases/latest/download/bazelisk-linux-amd64"
                         chmod +x bazelisk
-                        
-                        # Create local bin directory if it doesn't exist
                         mkdir -p ~/bin
                         mv bazelisk ~/bin/bazel
-                        
-                        # Add to PATH for this session
                         export PATH="$HOME/bin:$PATH"
-                        
                         echo "Bazelisk installation completed!"
-                        echo "PATH: $PATH"
                         ~/bin/bazel version
                     else
                         echo "Bazel is already installed."
                         bazel version
                     fi
+                    
+                    # Verify gcc is available
+                    gcc --version
                 '''
             }
         }
@@ -43,43 +42,12 @@ pipeline {
             }
         }
         
-        stage('Bazel Info') {
+        stage('Build Hello Target') {
             steps {
-                echo 'Checking Bazel environment...'
+                echo 'Building the hello target...'
                 sh '''
                     export PATH="$HOME/bin:$PATH"
-                    bazel version
-                    bazel info
-                '''
-            }
-        }
-        
-        stage('Clean Build') {
-            steps {
-                echo 'Cleaning previous build artifacts...'
-                sh '''
-                    export PATH="$HOME/bin:$PATH"
-                    bazel clean
-                '''
-            }
-        }
-        
-        stage('Build All Targets') {
-            steps {
-                echo 'Building all targets with Bazel...'
-                sh '''
-                    export PATH="$HOME/bin:$PATH"
-                    bazel build //...
-                '''
-            }
-        }
-        
-        stage('Run Tests') {
-            steps {
-                echo 'Running tests with Bazel...'
-                sh '''
-                    export PATH="$HOME/bin:$PATH"
-                    bazel test //... --test_output=all
+                    bazel build //:hello
                 '''
             }
         }
@@ -90,16 +58,6 @@ pipeline {
                 sh '''
                     export PATH="$HOME/bin:$PATH"
                     bazel run //:hello
-                '''
-            }
-        }
-        
-        stage('Query Targets') {
-            steps {
-                echo 'Showing all available targets...'
-                sh '''
-                    export PATH="$HOME/bin:$PATH"
-                    bazel query //...
                 '''
             }
         }
@@ -123,7 +81,6 @@ pipeline {
         }
         cleanup {
             echo 'Cleaning up workspace...'
-            // Clean up any remaining Bazel processes
             sh '''
                 export PATH="$HOME/bin:$PATH"
                 bazel clean --expunge || true

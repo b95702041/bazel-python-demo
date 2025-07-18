@@ -65,7 +65,10 @@ pipeline {
                     # Build as bazeluser
                     sudo -u bazeluser bash -c '
                         export PATH="$HOME/bin:$PATH"
-                        cd /var/jenkins_home/workspace/"$JOB_NAME"
+                        cd $WORKSPACE
+                        ls -la
+                        echo "Looking for MODULE.bazel..."
+                        find . -name "MODULE.bazel" -type f
                         bazel build //:hello
                     '
                 '''
@@ -79,7 +82,7 @@ pipeline {
                     # Run as bazeluser
                     sudo -u bazeluser bash -c '
                         export PATH="$HOME/bin:$PATH"
-                        cd /var/jenkins_home/workspace/"$JOB_NAME"
+                        cd $WORKSPACE
                         bazel run //:hello
                     '
                 '''
@@ -93,7 +96,7 @@ pipeline {
             sh '''
                 sudo -u bazeluser bash -c '
                     export PATH="$HOME/bin:$PATH"
-                    cd /var/jenkins_home/workspace/"$JOB_NAME"
+                    cd $WORKSPACE
                     bazel shutdown || true
                 ' || true
             '''

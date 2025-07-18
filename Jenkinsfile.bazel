@@ -6,31 +6,31 @@ pipeline {
     }
     
     stages {
-        stage('Install Bazel') {
+        stage('Install Bazelisk') {
             steps {
-                echo 'Installing Bazel...'
+                echo 'Installing Bazelisk (Bazel launcher)...'
                 sh '''
                     # Check if Bazel is already installed
                     if ! command -v bazel &> /dev/null; then
-                        echo "Bazel not found. Installing Bazel..."
+                        echo "Bazel not found. Installing Bazelisk..."
                         
-                        # Update package lists
-                        apt update
+                        # Download Bazelisk
+                        curl -L -o bazelisk "https://github.com/bazelbuild/bazelisk/releases/latest/download/bazelisk-linux-amd64"
+                        chmod +x bazelisk
                         
-                        # Install prerequisites
-                        apt install -y apt-transport-https curl gnupg
+                        # Create local bin directory if it doesn't exist
+                        mkdir -p ~/bin
+                        mv bazelisk ~/bin/bazel
                         
-                        # Add Bazel distribution URI as a package source
-                        curl -fsSL https://bazel.build/bazel-release.pub.gpg | gpg --dearmor > bazel.gpg
-                        mv bazel.gpg /etc/apt/trusted.gpg.d/
-                        echo "deb [arch=amd64] https://storage.googleapis.com/bazel-apt stable jdk1.8" | tee /etc/apt/sources.list.d/bazel.list
+                        # Add to PATH for this session
+                        export PATH="$HOME/bin:$PATH"
                         
-                        # Update package lists and install Bazel
-                        apt update && apt install -y bazel
-                        
-                        echo "Bazel installation completed!"
+                        echo "Bazelisk installation completed!"
+                        echo "PATH: $PATH"
+                        ~/bin/bazel version
                     else
                         echo "Bazel is already installed."
+                        bazel version
                     fi
                 '''
             }
@@ -46,43 +46,61 @@ pipeline {
         stage('Bazel Info') {
             steps {
                 echo 'Checking Bazel environment...'
-                sh 'bazel version'
-                sh 'bazel info'
+                sh '''
+                    export PATH="$HOME/bin:$PATH"
+                    bazel version
+                    bazel info
+                '''
             }
         }
         
         stage('Clean Build') {
             steps {
                 echo 'Cleaning previous build artifacts...'
-                sh 'bazel clean'
+                sh '''
+                    export PATH="$HOME/bin:$PATH"
+                    bazel clean
+                '''
             }
         }
         
         stage('Build All Targets') {
             steps {
                 echo 'Building all targets with Bazel...'
-                sh 'bazel build //...'
+                sh '''
+                    export PATH="$HOME/bin:$PATH"
+                    bazel build //...
+                '''
             }
         }
         
         stage('Run Tests') {
             steps {
                 echo 'Running tests with Bazel...'
-                sh 'bazel test //... --test_output=all'
+                sh '''
+                    export PATH="$HOME/bin:$PATH"
+                    bazel test //... --test_output=all
+                '''
             }
         }
         
         stage('Run Application') {
             steps {
                 echo 'Running the Python application...'
-                sh 'bazel run //:hello'
+                sh '''
+                    export PATH="$HOME/bin:$PATH"
+                    bazel run //:hello
+                '''
             }
         }
         
         stage('Query Targets') {
             steps {
                 echo 'Showing all available targets...'
-                sh 'bazel query //...'
+                sh '''
+                    export PATH="$HOME/bin:$PATH"
+                    bazel query //...
+                '''
             }
         }
     }
@@ -90,7 +108,10 @@ pipeline {
     post {
         always {
             echo 'Bazel pipeline completed!'
-            sh 'bazel shutdown'
+            sh '''
+                export PATH="$HOME/bin:$PATH"
+                bazel shutdown || true
+            '''
         }
         success {
             echo 'Bazel build succeeded! 🎉'
@@ -103,7 +124,10 @@ pipeline {
         cleanup {
             echo 'Cleaning up workspace...'
             // Clean up any remaining Bazel processes
-            sh 'bazel clean --expunge || true'
+            sh '''
+                export PATH="$HOME/bin:$PATH"
+                bazel clean --expunge || true
+            '''
         }
     }
 }

@@ -6,6 +6,36 @@ pipeline {
     }
     
     stages {
+        stage('Install Bazel') {
+            steps {
+                echo 'Installing Bazel...'
+                sh '''
+                    # Check if Bazel is already installed
+                    if ! command -v bazel &> /dev/null; then
+                        echo "Bazel not found. Installing Bazel..."
+                        
+                        # Update package lists
+                        apt update
+                        
+                        # Install prerequisites
+                        apt install -y apt-transport-https curl gnupg
+                        
+                        # Add Bazel distribution URI as a package source
+                        curl -fsSL https://bazel.build/bazel-release.pub.gpg | gpg --dearmor > bazel.gpg
+                        mv bazel.gpg /etc/apt/trusted.gpg.d/
+                        echo "deb [arch=amd64] https://storage.googleapis.com/bazel-apt stable jdk1.8" | tee /etc/apt/sources.list.d/bazel.list
+                        
+                        # Update package lists and install Bazel
+                        apt update && apt install -y bazel
+                        
+                        echo "Bazel installation completed!"
+                    else
+                        echo "Bazel is already installed."
+                    fi
+                '''
+            }
+        }
+        
         stage('Checkout') {
             steps {
                 echo 'Checking out Bazel Python code...'
@@ -21,17 +51,24 @@ pipeline {
             }
         }
         
-        stage('Build') {
+        stage('Clean Build') {
             steps {
-                echo 'Building with Bazel...'
+                echo 'Cleaning previous build artifacts...'
+                sh 'bazel clean'
+            }
+        }
+        
+        stage('Build All Targets') {
+            steps {
+                echo 'Building all targets with Bazel...'
                 sh 'bazel build //...'
             }
         }
         
-        stage('Test') {
+        stage('Run Tests') {
             steps {
-                echo 'Testing with Bazel...'
-                sh 'bazel test //...'
+                echo 'Running tests with Bazel...'
+                sh 'bazel test //... --test_output=all'
             }
         }
         
@@ -41,17 +78,32 @@ pipeline {
                 sh 'bazel run //:hello'
             }
         }
+        
+        stage('Query Targets') {
+            steps {
+                echo 'Showing all available targets...'
+                sh 'bazel query //...'
+            }
+        }
     }
     
     post {
         always {
             echo 'Bazel pipeline completed!'
+            sh 'bazel shutdown'
         }
         success {
             echo 'Bazel build succeeded! 🎉'
+            echo 'Python application ran successfully with Bazel!'
         }
         failure {
             echo 'Bazel build failed! ❌'
+            echo 'Check the logs above for details.'
+        }
+        cleanup {
+            echo 'Cleaning up workspace...'
+            // Clean up any remaining Bazel processes
+            sh 'bazel clean --expunge || true'
         }
     }
 }

@@ -1,6 +1,6 @@
 # Bazel Python Demo
 
-A simple Python project demonstrating Bazel build system fundamentals. Perfect for learning how Bazel works with Python code, dependencies, and incremental builds.
+A simple Python project demonstrating Bazel build system fundamentals with Jenkins CI/CD integration. Perfect for learning how Bazel works with Python code, dependencies, incremental builds, and automated pipelines.
 
 ## 🎯 What This Project Demonstrates
 
@@ -9,17 +9,21 @@ A simple Python project demonstrating Bazel build system fundamentals. Perfect f
 - **Dependency management**: How modules depend on each other
 - **Incremental builds**: Fast rebuilds when nothing changes
 - **Cross-platform builds**: Works on Windows, macOS, and Linux
+- **CI/CD Integration**: Automated builds with Jenkins
+- **Containerized CI**: Jenkins running in Docker with automatic Bazel installation
 
 ## 📁 Project Structure
 
 ```
 bazel-python-demo/
 ├── WORKSPACE           # Bazel project root (empty file)
+├── MODULE.bazel        # Bazel module configuration
 ├── BUILD.bazel         # Build rules and targets
 ├── hello.py            # Main executable program
 ├── math_utils.py       # Reusable Python library
+├── Jenkinsfile.bazel   # Jenkins CI/CD pipeline
 ├── .gitignore          # Ignore Bazel output directories
-└── README.md           # This file
+└── README.md           # This documentation
 ```
 
 ## 🚀 Quick Start
@@ -112,6 +116,46 @@ py_binary(
 - `name`: The target name (used with `bazel run //:hello`)
 - `srcs`: Source files for this target
 
+## 🔄 CI/CD Pipeline
+
+This project includes a complete Jenkins CI/CD pipeline that demonstrates automated Bazel builds.
+
+### Pipeline Stages
+
+1. **🔧 Install Bazelisk** - Automatically installs Bazel using Bazelisk
+2. **📥 Checkout** - Gets latest code from GitHub
+3. **ℹ️ Bazel Info** - Shows Bazel version and configuration
+4. **🧹 Clean Build** - Cleans previous build artifacts
+5. **🏗️ Build All Targets** - Builds all Bazel targets
+6. **🧪 Run Tests** - Executes all Bazel tests
+7. **🚀 Run Application** - Executes the Python application
+8. **🔍 Query Targets** - Shows all available Bazel targets
+
+### Jenkins Setup
+
+**Prerequisites:**
+- Docker Desktop installed
+- Jenkins running in Docker container
+
+**Run Jenkins in Docker:**
+```bash
+docker run -d -p 8080:8080 -p 50000:50000 -v jenkins_home:/var/jenkins_home --name jenkins jenkins/jenkins:lts
+```
+
+**Configure Jenkins Pipeline:**
+1. Create new Pipeline job
+2. Set Repository URL: `https://github.com/b95702041/bazel-python-demo.git`
+3. Set Script Path: `Jenkinsfile.bazel`
+4. Run the pipeline
+
+### Pipeline Features
+
+- ✅ **Automatic Bazel Installation** - Uses Bazelisk for easy setup
+- ✅ **No Root Privileges Required** - Installs to user directory
+- ✅ **Cross-Platform Compatible** - Works in Docker containers
+- ✅ **Complete Build Lifecycle** - Clean, build, test, run
+- ✅ **Error Handling** - Robust cleanup and error reporting
+
 ## ⚡ Bazel Performance
 
 **First run** (cold build):
@@ -181,11 +225,11 @@ Run tests:
 bazel test //:math_utils_test
 ```
 
-### Understanding the WORKSPACE File
-The `WORKSPACE` file (currently empty) marks the root of your Bazel project. For more complex projects, it would contain:
-- External dependencies
-- Repository rules
-- Toolchain configurations
+### Understanding the MODULE.bazel File
+The `MODULE.bazel` file (Bazel 6.0+) defines module dependencies and is the modern replacement for `WORKSPACE`. It provides:
+- Module metadata
+- Dependency declarations
+- Version compatibility
 
 ## 🏗️ How Bazel Works
 
@@ -201,6 +245,20 @@ The `WORKSPACE` file (currently empty) marks the root of your Bazel project. For
 - **Multi-language**: Supports many programming languages
 - **Scalable**: Works for small projects to massive codebases
 - **Remote execution**: Can distribute builds across machines
+- **CI/CD Ready**: Perfect for automated build pipelines
+
+## 🔗 Related Projects
+
+This project is part of a multi-repository CI/CD demonstration:
+
+- **[simple-cicd-demo](https://github.com/b95702041/simple-cicd-demo)** - Node.js app with npm-based CI/CD
+- **[bazel-python-demo](https://github.com/b95702041/bazel-python-demo)** - This Python app with Bazel-based CI/CD
+
+Together, they demonstrate:
+- Multi-language CI/CD pipelines
+- Different build systems (npm vs Bazel)
+- Jenkins integration with Docker
+- Polyglot development workflows
 
 ## 📖 Learn More
 
@@ -208,6 +266,7 @@ The `WORKSPACE` file (currently empty) marks the root of your Bazel project. For
 - [Bazel Python Tutorial](https://bazel.build/start/python)
 - [BUILD File Reference](https://bazel.build/reference/be/overview)
 - [Bazel Query Language](https://bazel.build/query/language)
+- [Jenkins Pipeline Documentation](https://www.jenkins.io/doc/book/pipeline/)
 
 ## 🐛 Troubleshooting
 
@@ -215,6 +274,7 @@ The `WORKSPACE` file (currently empty) marks the root of your Bazel project. For
 
 1. **"bazel: command not found"**
    - Make sure Bazel is installed and in your PATH
+   - In CI/CD, the pipeline automatically installs Bazelisk
 
 2. **"No such package" errors**
    - Check that your BUILD.bazel file is in the right location
@@ -227,6 +287,23 @@ The `WORKSPACE` file (currently empty) marks the root of your Bazel project. For
 4. **Permission errors on Windows**
    - Run PowerShell as Administrator when installing Bazel
 
+5. **Jenkins pipeline failures**
+   - Check that Bazelisk downloaded successfully
+   - Verify PATH is set correctly in pipeline stages
+   - Look for network connectivity issues
+
+## ✅ Pipeline Status
+
+**Latest Build:** ✅ SUCCESS
+
+```
+✅ Bazelisk: v1.26.0
+✅ Bazel: 8.3.1
+✅ Targets: 2 built successfully
+✅ Tests: All passed
+✅ Application: Executed successfully
+```
+
 ## 🤝 Contributing
 
 Feel free to:
@@ -234,6 +311,8 @@ Feel free to:
 - Create additional Python modules
 - Add tests for the functions
 - Experiment with different Bazel rules
+- Improve the Jenkins pipeline
+- Add more CI/CD integrations
 
 ## 📝 License
 
@@ -241,4 +320,4 @@ This project is for educational purposes. Feel free to use and modify as needed.
 
 ---
 
-**Next steps:** Try adding more Python files, creating tests, or exploring Bazel's query capabilities!
+**Next steps:** Try adding more Python files, creating tests, exploring Bazel's query capabilities, or integrating with other CI/CD tools!

@@ -1,0 +1,57 @@
+pipeline {
+    agent any
+    
+    environment {
+        PROJECT_NAME = 'bazel-python-demo'
+    }
+    
+    stages {
+        stage('Checkout') {
+            steps {
+                echo 'Checking out Bazel Python code...'
+                checkout scm
+            }
+        }
+        
+        stage('Bazel Info') {
+            steps {
+                echo 'Checking Bazel environment...'
+                sh 'bazel version'
+                sh 'bazel info'
+            }
+        }
+        
+        stage('Build') {
+            steps {
+                echo 'Building with Bazel...'
+                sh 'bazel build //...'
+            }
+        }
+        
+        stage('Test') {
+            steps {
+                echo 'Testing with Bazel...'
+                sh 'bazel test //...'
+            }
+        }
+        
+        stage('Run Application') {
+            steps {
+                echo 'Running the Python application...'
+                sh 'bazel run //:hello'
+            }
+        }
+    }
+    
+    post {
+        always {
+            echo 'Bazel pipeline completed!'
+        }
+        success {
+            echo 'Bazel build succeeded! 🎉'
+        }
+        failure {
+            echo 'Bazel build failed! ❌'
+        }
+    }
+}
